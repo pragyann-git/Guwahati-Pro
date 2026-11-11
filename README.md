@@ -58,4 +58,3 @@ cash/UPI on delivery.
 
 - Login, order history across devices and the GHY Pro Club plan
 - Orders are not stored on a server: WhatsApp (and Razorpay for paid orders) is the record
-- The WhatsApp and phone numbers in `src/data.js` are placeholders

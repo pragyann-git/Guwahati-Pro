@@ -5,8 +5,8 @@
 export const SHOP = {
   name: 'GHY Pro',
   // WhatsApp number that receives orders: country code + number, digits only.
-  whatsapp: '910000000000',
-  phone: '+91 00000 00000',
+  whatsapp: '919401807049',
+  phone: '+91 94018 07049',
   // Online payments turn on when VITE_RAZORPAY_KEY_ID is set (see README).
   razorpayKey: import.meta.env?.VITE_RAZORPAY_KEY_ID ?? '',
 }
