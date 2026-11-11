@@ -1,5 +1,7 @@
-// Hand-drawn SVG artwork for each product type. Swap for real photos by
-// giving a product an `image` URL (see ProductImage below).
+// Product pictures. Each product points at a photo in public/products/.
+// If the photo is missing or fails to load, a drawn illustration is shown instead,
+// so you can drop in your own (or AI-generated) photos at any time.
+import { useState } from 'react'
 
 const FISH = {
   rohu: { top: '#7D8B97', body: '#B6C2CB', belly: '#EEF2F4', fin: '#D7897A' },
@@ -221,8 +223,20 @@ function Art({ kind, tone }) {
   }
 }
 
-export default function ProductArt({ art, image, alt = '', className = '' }) {
-  if (image) return <img className={`product-art ${className}`} src={image} alt={alt} loading="lazy" />
+export default function ProductArt({ art, image, alt = '', className = '', eager = false }) {
+  const [failed, setFailed] = useState(null)
+  if (image && failed !== image)
+    return (
+      <img
+        className={`product-art is-photo ${className}`}
+        src={image}
+        alt={alt}
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+        onError={() => setFailed(image)}
+      />
+    )
+  if (!art) return null
   return (
     <svg className={`product-art ${className}`} viewBox="0 0 200 160" role={alt ? 'img' : undefined} aria-label={alt || undefined} aria-hidden={alt ? undefined : true}>
       <ellipse cx="100" cy="134" rx="74" ry="9" fill="#0F2E3A" opacity=".08" />

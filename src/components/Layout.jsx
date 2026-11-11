@@ -1,31 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom'
-import { MapPin, Search, ShoppingBag, ChevronDown, X, Minus, Plus, Trash2, Truck, Clock, Phone } from 'lucide-react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { MapPin, Search, ShoppingBag, ChevronDown, X, Minus, Plus, Trash2, Truck, Clock, Phone, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
-import { AREAS, CATEGORIES, FREE_DELIVERY_OVER, rupees } from '../data'
+import { AREAS, CATEGORIES, FREE_DELIVERY_OVER, SCENES, SHOP, rupees } from '../data'
 import ProductArt from './ProductArt'
 
-export function Logo() {
+export function Logo({ light = false }) {
   return (
-    <Link to="/" className="logo" aria-label="GHY Pro home">
+    <Link to="/" className={`logo ${light ? 'logo-light' : ''}`} aria-label="GHY Pro home">
       <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect width="64" height="64" rx="18" fill="currentColor" />
-        <path d="M11 33c7-10 22-12 32-2l9-6-2 8 2 8-9-6c-10 10-25 8-32-2z" fill="#7FD1C7" />
-        <circle cx="21" cy="31" r="2.4" fill="#0F2E3A" />
+        <circle cx="32" cy="32" r="31" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path d="M13 33c7-9 20-11 29-2l8-5-2 7 2 7-8-5c-9 9-22 7-29-2z" fill="currentColor" />
+        <circle cx="22" cy="31.5" r="2.2" fill="var(--logo-eye)" />
       </svg>
-      <span className="logo-word">
-        GHY<b>Pro</b>
-      </span>
-      <span className="logo-sub">Guwahati Pro</span>
+      <span className="logo-word">GHY Pro</span>
     </Link>
   )
 }
+
+const NAV = [
+  { to: '/', label: 'Home', end: true },
+  { to: '/shop?cat=fish', label: 'Fish' },
+  { to: '/shop?cat=chicken', label: 'Chicken' },
+  { to: '/shop?cat=mutton', label: 'Mutton' },
+  { to: '/shop', label: 'Shop all' },
+]
 
 export function Header() {
   const { area, setArea, count, setCartOpen } = useStore()
   const [params] = useSearchParams()
   const [q, setQ] = useState(params.get('q') ?? '')
   const navigate = useNavigate()
+  const { pathname, search } = useLocation()
 
   useEffect(() => {
     setQ(params.get('q') ?? '')
@@ -35,51 +41,52 @@ export function Header() {
     e.preventDefault()
     navigate(q.trim() ? `/shop?q=${encodeURIComponent(q.trim())}` : '/shop')
   }
+  const here = pathname + search
+  const isActive = (n) => (n.end ? pathname === '/' : n.to === '/shop' ? here === '/shop' : here.startsWith(n.to))
 
   return (
     <header className="site-header">
       <div className="container header-row">
         <Logo />
-        <label className="location">
-          <MapPin size={18} aria-hidden="true" />
-          <span className="location-text">
-            <small>Delivering to</small>
-            <span className="location-value">
-              {area}<span className="city">, Guwahati</span> <ChevronDown size={14} aria-hidden="true" />
-            </span>
-          </span>
-          <select value={area} onChange={(e) => setArea(e.target.value)} aria-label="Delivery area">
-            {AREAS.map((a) => (
-              <option key={a}>{a}</option>
-            ))}
-          </select>
-        </label>
-
-        <form className="search" role="search" onSubmit={submit}>
-          <Search size={18} aria-hidden="true" />
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search rohu, chicken breast, mutton keema…"
-            aria-label="Search fish, chicken and mutton"
-          />
-          <button type="submit" className="btn btn-dark btn-sm">Search</button>
-        </form>
 
         <nav className="header-nav" aria-label="Main">
-          {CATEGORIES.map((c) => (
-            <NavLink key={c.id} to={`/shop?cat=${c.id}`} className="nav-link">
-              {c.name}
-            </NavLink>
+          {NAV.map((n) => (
+            <Link key={n.to} to={n.to} className={`nav-link ${isActive(n) ? 'active' : ''}`} aria-current={isActive(n) ? 'page' : undefined}>
+              {n.label}
+            </Link>
           ))}
         </nav>
 
-        <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label={`Open cart, ${count} items`}>
-          <ShoppingBag size={20} aria-hidden="true" />
-          <span>Cart</span>
-          {count > 0 && <span className="cart-count" aria-hidden="true">{count}</span>}
-        </button>
+        <div className="header-tools">
+          <form className="search" role="search" onSubmit={submit}>
+            <Search size={17} aria-hidden="true" />
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search rohu, keema…"
+              aria-label="Search fish, chicken and mutton"
+            />
+          </form>
+
+          <label className="location">
+            <MapPin size={17} aria-hidden="true" />
+            <span className="location-value">
+              {area} <ChevronDown size={14} aria-hidden="true" />
+            </span>
+            <select value={area} onChange={(e) => setArea(e.target.value)} aria-label="Delivery area in Guwahati">
+              {AREAS.map((a) => (
+                <option key={a}>{a}</option>
+              ))}
+            </select>
+          </label>
+
+          <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label={`Open cart, ${count} items`}>
+            <ShoppingBag size={19} aria-hidden="true" />
+            <span className="cart-label">Cart</span>
+            {count > 0 && <span className="cart-count" aria-hidden="true">{count}</span>}
+          </button>
+        </div>
       </div>
     </header>
   )
@@ -100,7 +107,7 @@ export function QtyStepper({ value, onChange, label, size = 'md' }) {
 }
 
 export function CartDrawer() {
-  const { lines, subtotal, delivery, total, setQty, cartOpen, setCartOpen, area, notify } = useStore()
+  const { lines, subtotal, delivery, total, setQty, cartOpen, setCartOpen, area } = useStore()
   const panel = useRef()
 
   useEffect(() => {
@@ -184,12 +191,9 @@ export function CartDrawer() {
               <div><dt>Delivery</dt><dd>{delivery === 0 ? 'Free' : rupees(delivery)}</dd></div>
               <div className="grand"><dt>To pay</dt><dd>{rupees(total)}</dd></div>
             </dl>
-            <button
-              className="btn btn-dark btn-block btn-lg"
-              onClick={() => notify("Checkout isn't connected yet. Add a payment provider to start taking orders.")}
-            >
+            <Link to="/checkout" className="btn btn-dark btn-block btn-lg" onClick={() => setCartOpen(false)}>
               Checkout, {rupees(total)}
-            </button>
+            </Link>
           </>
         )}
       </aside>
@@ -213,9 +217,21 @@ export function Toast() {
 export function Footer() {
   return (
     <footer className="site-footer">
+      <div className="container footer-cta">
+        <div className="footer-cta-copy">
+          <h2>Taste the Brahmaputra, cut fresh for your kitchen.</h2>
+          <p>Order before 8 PM and we'll bring tomorrow morning's catch to your door by 8 AM.</p>
+          <Link to="/shop" className="btn btn-gold">
+            Start your order <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="footer-cta-art">
+          <ProductArt image={SCENES.cta} art={{ kind: 'fish', tone: 'hilsa' }} alt="" />
+        </div>
+      </div>
       <div className="container footer-grid">
         <div>
-          <Logo />
+          <Logo light />
           <p className="footer-about">
             Fresh fish, chicken and mutton from Guwahati's markets and Assam's farms. Cleaned and cut after you order, kept cold all the way to your door.
           </p>
@@ -236,10 +252,13 @@ export function Footer() {
         <div>
           <h3>Hours</h3>
           <p className="footer-line"><Clock size={16} aria-hidden="true" /> 6 AM to 10 PM, every day</p>
-          <p className="footer-line"><Phone size={16} aria-hidden="true" /> +91 00000 00000</p>
+          <p className="footer-line"><Phone size={16} aria-hidden="true" /> {SHOP.phone}</p>
         </div>
       </div>
-      <div className="container footer-base">© {new Date().getFullYear()} GHY Pro, Guwahati</div>
+      <div className="container footer-base">
+        <span>© {new Date().getFullYear()} GHY Pro, Guwahati</span>
+        <Link to="/credits">Photo credits</Link>
+      </div>
     </footer>
   )
 }

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { byId, WEIGHTS, DELIVERY_FEE, FREE_DELIVERY_OVER } from './data'
+import { byId } from './data'
+import { priceCart } from './pricing'
 
 const StoreContext = createContext(null)
 
@@ -74,26 +75,14 @@ export function StoreProvider({ children }) {
     setFavourites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]))
   }, [])
 
-  const lines = useMemo(
-    () =>
-      cart
-        .map((l) => {
-          const product = byId(l.id)
-          if (!product) return null
-          const w = WEIGHTS.find((w) => w.grams === l.grams) ?? WEIGHTS[1]
-          return { ...l, product, weight: w, unit: product.price * w.factor, total: product.price * w.factor * l.qty }
-        })
-        .filter(Boolean),
-    [cart],
-  )
+  const clearCart = useCallback(() => setCart([]), [])
 
-  const subtotal = lines.reduce((s, l) => s + l.total, 0)
+  const { lines, subtotal, delivery, total } = useMemo(() => priceCart(cart), [cart])
   const count = lines.reduce((s, l) => s + l.qty, 0)
-  const delivery = subtotal === 0 || subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_FEE
 
   const value = {
-    lines, count, subtotal, delivery, total: subtotal + delivery,
-    add, setQty, qtyOf,
+    lines, count, subtotal, delivery, total,
+    add, setQty, qtyOf, clearCart, cart,
     favourites, toggleFavourite,
     area, setArea,
     cartOpen, setCartOpen,

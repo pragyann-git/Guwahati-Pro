@@ -1,6 +1,28 @@
 // Sample catalogue. Prices are per the listed base weight (500 g unless noted).
 // Replace with your own products, prices and photos (see `image` in README).
 
+// ── Shop settings: change these to your real details ──────────────
+export const SHOP = {
+  name: 'GHY Pro',
+  // WhatsApp number that receives orders: country code + number, digits only.
+  whatsapp: '910000000000',
+  phone: '+91 00000 00000',
+  // Online payments turn on when VITE_RAZORPAY_KEY_ID is set (see README).
+  razorpayKey: import.meta.env?.VITE_RAZORPAY_KEY_ID ?? '',
+}
+
+// Delivery windows customers can choose at checkout (24-hour clock).
+export const SLOTS = [
+  { start: 7, end: 9 },
+  { start: 9, end: 11 },
+  { start: 11, end: 13 },
+  { start: 16, end: 18 },
+  { start: 18, end: 20 },
+  { start: 20, end: 22 },
+]
+// A slot can be booked until this many hours before it starts.
+export const SLOT_CUTOFF_HOURS = 2
+
 export const AREAS = [
   'Zoo Road',
   'Ganeshguri',
@@ -38,6 +60,19 @@ export const CATEGORIES = [
 ]
 
 export const CUTS = ['Curry cut', 'Steaks', 'Whole cleaned', 'Boneless', 'Mince', 'Chops']
+
+// Every product's photo lives at public/products/<id>.jpg. Replace any file to
+// change the picture; if a file is missing the drawn illustration is used.
+const withPhoto = (p) => ({ image: `/products/${p.id}.jpg`, ...p })
+
+// Lifestyle photos used around the home page (public/images/).
+export const SCENES = {
+  hero: '/images/hero-fish-curry.jpg',
+  heroSide: '/images/hero-side.jpg',
+  market: '/images/uzan-bazar-market.jpg',
+  kitchen: '/images/home-kitchen.jpg',
+  cta: '/images/cta-plate.jpg',
+}
 
 export const PRODUCTS = [
   // ── Fish ───────────────────────────────────────────
@@ -323,7 +358,7 @@ export const PRODUCTS = [
     description:
       'Boneless cubes from the leg, trimmed of sinew. For biryani, seekh and quick dry fries.',
   },
-]
+].map(withPhoto)
 
 export const WEIGHTS = [
   { grams: 250, label: '250 g', factor: 0.5 },
@@ -337,3 +372,4 @@ export const FREE_DELIVERY_OVER = 499
 export const discount = (p) => Math.round(((p.mrp - p.price) / p.mrp) * 100)
 export const rupees = (n) => '₹' + Math.round(n).toLocaleString('en-IN')
 export const byId = (id) => PRODUCTS.find((p) => p.id === id)
+export const firstSentence = (s) => s.split(/(?<=\.)\s/)[0]
