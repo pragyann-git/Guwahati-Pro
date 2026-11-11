@@ -27,9 +27,15 @@ export function StoreProvider({ children }) {
   const [toast, setToast] = useState(null)
   const toastTimer = useRef()
 
-  useEffect(() => save('ghy.cart', cart), [cart])
-  useEffect(() => save('ghy.favs', favourites), [favourites])
-  useEffect(() => save('ghy.area', area), [area])
+  useEffect(() => {
+    save('ghy.cart', cart)
+  }, [cart])
+  useEffect(() => {
+    save('ghy.favs', favourites)
+  }, [favourites])
+  useEffect(() => {
+    save('ghy.area', area)
+  }, [area])
 
   const notify = useCallback((message) => {
     clearTimeout(toastTimer.current)

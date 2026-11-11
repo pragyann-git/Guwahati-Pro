@@ -27,7 +27,9 @@ export function Header() {
   const [q, setQ] = useState(params.get('q') ?? '')
   const navigate = useNavigate()
 
-  useEffect(() => setQ(params.get('q') ?? ''), [params])
+  useEffect(() => {
+    setQ(params.get('q') ?? '')
+  }, [params])
 
   const submit = (e) => {
     e.preventDefault()
