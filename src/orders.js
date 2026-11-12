@@ -1,8 +1,7 @@
-// Order helpers: delivery slots, order IDs, the WhatsApp message and the
+// Order helpers: delivery slots, placing orders, UPI payment links and the
 // customer's saved details (kept only in their own browser).
-import { SHOP, SLOTS, SLOT_CUTOFF_HOURS, rupees } from './data'
+import { SHOP, SLOTS, SLOT_CUTOFF_HOURS } from './data'
 
-const pad = (n) => String(n).padStart(2, '0')
 const hourLabel = (h) => `${((h + 11) % 12) + 1} ${h < 12 ? 'AM' : 'PM'}`
 export const slotLabel = (s) => `${hourLabel(s.start)} – ${hourLabel(s.end)}`
 
@@ -26,38 +25,34 @@ export function slotDays(now = new Date()) {
   return days.filter((d) => d.slots.some((s) => s.open))
 }
 
-export function newOrderId(now = new Date()) {
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase()
-  return `GHY-${String(now.getFullYear()).slice(2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${rand}`
+async function post(url, body) {
+  let r
+  try {
+    r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  } catch {
+    throw new Error("You seem to be offline. Check your connection and try again.")
+  }
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(data.error || 'Something went wrong. Please try again.')
+  return data
 }
 
-export function whatsappMessage(order) {
-  const items = order.lines
-    .map((l) => `• ${l.name} (${l.weight}) × ${l.qty} = ${rupees(l.total)}`)
-    .join('\n')
-  const payment = order.paid ? `Paid online (Razorpay ${order.paymentId})` : 'Cash / UPI on delivery'
-  return [
-    `New order ${order.id}`,
-    '',
-    items,
-    '',
-    `Items: ${rupees(order.subtotal)}`,
-    `Delivery: ${order.delivery === 0 ? 'Free' : rupees(order.delivery)}`,
-    `Total: ${rupees(order.total)}`,
-    `Payment: ${payment}`,
-    '',
-    `Name: ${order.customer.name}`,
-    `Phone: +91 ${order.customer.phone}`,
-    `Address: ${order.customer.address}${order.customer.landmark ? `, near ${order.customer.landmark}` : ''}, ${order.customer.area}, Guwahati`,
-    `Delivery: ${order.slot}`,
-    order.customer.notes ? `Notes: ${order.customer.notes}` : '',
-  ]
-    .filter((l, i, a) => l !== '' || a[i - 1] !== '')
-    .join('\n')
-    .trim()
-}
+export const placeOrder = (payload) => post('/api/order', payload).then((d) => d.order)
+export const reportUpiRef = (id, ref) => post('/api/order-upi', { id, ref })
 
-export const whatsappLink = (order) => `https://wa.me/${SHOP.whatsapp}?text=${encodeURIComponent(whatsappMessage(order))}`
+// upi:// link that opens GPay, PhonePe, Paytm etc. with the amount filled in.
+export const upiLink = (order) =>
+  'upi://pay?' +
+  new URLSearchParams({
+    pa: SHOP.upiId,
+    pn: SHOP.upiName,
+    am: Number(order.total).toFixed(2),
+    cu: 'INR',
+    tn: `Order ${order.id}`,
+  })
+    .toString()
+    .replace(/\+/g, '%20')
+    .replace(/%40/g, '@') // some UPI apps expect a literal @ in the UPI ID
 
 const read = (key, fallback) => {
   try {
@@ -76,4 +71,4 @@ const write = (key, value) => {
 export const loadCustomer = () => read('ghy.customer', {})
 export const saveCustomer = (c) => write('ghy.customer', c)
 export const loadOrders = () => read('ghy.orders', [])
-export const saveOrder = (o) => write('ghy.orders', [o, ...loadOrders()].slice(0, 20))
+export const saveOrder = (o) => write('ghy.orders', [o, ...loadOrders().filter((x) => x.id !== o.id)].slice(0, 20))

@@ -30,31 +30,43 @@ After adding or replacing photos, run `npm run images` to shrink them (PNG/WebP 
 
 ## Orders
 
-Set your details in `SHOP` at the top of `src/data.js`: the **WhatsApp number** that receives orders and the phone
-number shown on the site. Delivery windows are in `SLOTS`.
+Shop settings are in `SHOP` at the top of `src/data.js`: the phone number shown on the site and your **UPI ID**
+(leave `upiId` empty to offer cash on delivery only). Delivery windows are in `SLOTS`.
 
 - **Checkout** (`/checkout`) collects name, phone, address, delivery slot and notes.
-- **Cash / UPI on delivery:** WhatsApp opens with the full order filled in; the customer taps send.
-- **Pay online (Razorpay):** turns on when the keys below are set. The amount is recomputed on the server from
-  `src/data.js` and the payment signature is checked, so prices can't be changed from the browser.
+- **Cash on delivery** or **Pay now by UPI**. UPI opens the customer's UPI app (GPay, PhonePe, Paytm…) with the
+  amount filled in and pays straight to your UPI ID; on a computer it shows a QR code. The customer then enters the
+  12-digit UPI reference so you can match it in your bank app.
+- Orders are saved in a **Supabase** database by the server function `api/order.js`, which recomputes prices from
+  `src/data.js` so they can't be changed from the browser.
+- **`/admin`** (not linked anywhere) lists orders. Change status (new → confirmed → out for delivery → delivered)
+  and mark cash or UPI as received. It refreshes every minute.
 
-### Turning on Razorpay (Vercel)
+### Setting up orders (one time, about 10 minutes)
 
-1. Create a Razorpay account and get **test** keys (Settings → API Keys).
-2. In Vercel → Project → Settings → Environment Variables, add `VITE_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_ID` (the same
-   key id) and `RAZORPAY_KEY_SECRET`, then redeploy.
-3. Test with Razorpay's test UPI/cards, then switch to live keys after KYC.
+1. Create a free project at supabase.com.
+2. In **SQL Editor**, paste all of `supabase/schema.sql` and run it. Then run, with your own email:
+   `insert into public.admins (email) values ('you@example.com');`
+3. In **Authentication → Users**, click **Add user**, enter the same email and a strong password.
+   Then in **Authentication → Sign In / Providers**, turn off **Allow new users to sign up**.
+4. In **Project Settings → API**, copy the Project URL, the `anon` key and the `service_role` key.
+5. Add them as environment variables in Vercel (Project → Settings → Environment Variables), then redeploy:
+   - `VITE_SUPABASE_URL` and `SUPABASE_URL`: the Project URL
+   - `VITE_SUPABASE_ANON_KEY`: the anon key
+   - `SUPABASE_SERVICE_ROLE_KEY`: the service_role key (secret: never put it in code or share it)
+6. To try it on your computer, put the same four lines in a file called `.env.local` in the project folder
+   (it's ignored by git) and run `npm run dev`.
 
-The payment server functions live in `api/` and run on Vercel. On Netlify the site works, but only with
-cash/UPI on delivery.
+The order functions in `api/` run on Vercel (and in `npm run dev`). Netlify won't run them, so use Vercel.
 
 ## Hosting
 
 - **Vercel (recommended):** import the GitHub repo at vercel.com/new. It detects Vite automatically; `vercel.json`
   makes page links work on refresh.
-- **Netlify:** import the repo, build command `npm run build`, publish folder `dist` (`public/_redirects` handles links).
+- **Netlify:** the shop pages work (`public/_redirects` handles links), but ordering needs Vercel.
 
 ## Not connected yet
 
 - Login, order history across devices and the GHY Pro Club plan
-- Orders are not stored on a server: WhatsApp (and Razorpay for paid orders) is the record
+- Customer notifications (SMS) when the order status changes
+- Automatic UPI payment confirmation (you match the UPI reference by hand)

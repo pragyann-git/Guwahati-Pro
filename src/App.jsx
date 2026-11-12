@@ -8,6 +8,7 @@ import Product from './pages/Product'
 import Credits from './pages/Credits'
 import Checkout from './pages/Checkout'
 import OrderPlaced from './pages/OrderPlaced'
+import Admin from './pages/Admin'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/credits" element={<Credits />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order/:id" element={<OrderPlaced />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<Shop />} />
         </Routes>
         <Footer />

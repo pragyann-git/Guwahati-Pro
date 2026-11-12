@@ -4,11 +4,12 @@
 // ── Shop settings: change these to your real details ──────────────
 export const SHOP = {
   name: 'GHY Pro',
-  // WhatsApp number that receives orders: country code + number, digits only.
-  whatsapp: '919401807049',
   phone: '+91 94018 07049',
-  // Online payments turn on when VITE_RAZORPAY_KEY_ID is set (see README).
-  razorpayKey: import.meta.env?.VITE_RAZORPAY_KEY_ID ?? '',
+  // UPI ID that receives "Pay by UPI" payments, e.g. 'ghypro@okaxis'.
+  // Leave empty to offer cash on delivery only.
+  upiId: '',
+  // Name shown in the customer's UPI app when they pay.
+  upiName: 'GHY Pro',
 }
 
 // Delivery windows customers can choose at checkout (24-hour clock).

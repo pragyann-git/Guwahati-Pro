@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Banknote, CreditCard, Lock, MessageCircle } from 'lucide-react'
+import { ArrowLeft, Banknote, Smartphone, ShoppingBag } from 'lucide-react'
 import { AREAS, SHOP, rupees } from '../data'
 import { useStore } from '../store'
 import ProductArt from '../components/ProductArt'
-import { loadCustomer, newOrderId, saveCustomer, saveOrder, slotDays, whatsappLink } from '../orders'
-import { payOnline } from '../payments'
+import { loadCustomer, placeOrder, saveCustomer, saveOrder, slotDays } from '../orders'
 
 const PHONE_RE = /^[6-9]\d{9}$/
 
@@ -65,36 +64,22 @@ export default function Checkout() {
     const customer = { ...form, phone: form.phone.replace(/\D/g, '').slice(-10), area }
     saveCustomer({ name: customer.name, phone: customer.phone, address: customer.address, landmark: customer.landmark })
 
-    const order = {
-      id: newOrderId(),
-      createdAt: new Date().toISOString(),
-      lines: lines.map((l) => ({ id: l.id, name: l.product.name, weight: l.weight.label, qty: l.qty, total: l.total })),
-      subtotal, delivery, total,
-      customer,
-      slot: `${day.name}, ${day.date}, ${slot.label}`,
-      paid: false,
+    setBusy(true)
+    try {
+      const order = await placeOrder({
+        cart,
+        customer,
+        slot: `${day.name}, ${day.date}, ${slot.label}`,
+        payment: pay,
+      })
+      saveOrder(order)
+      clearCart()
+      navigate(`/order/${order.id}`, { state: { order } })
+    } catch (err) {
+      notify(err.message)
+    } finally {
+      setBusy(false)
     }
-
-    if (pay === 'online') {
-      setBusy(true)
-      try {
-        const result = await payOnline({ cart, order })
-        if (!result) return // closed the payment window
-        order.paid = true
-        order.paymentId = result.paymentId
-      } catch (err) {
-        notify(err.message || 'Payment failed. You can try again or pay on delivery.')
-        return
-      } finally {
-        setBusy(false)
-      }
-    }
-
-    saveOrder(order)
-    // Open WhatsApp now, while we still have the click, so pop-up blockers allow it.
-    if (!order.paid) window.open(whatsappLink(order), '_blank', 'noopener')
-    clearCart()
-    navigate(`/order/${order.id}`, { state: { order } })
   }
 
   return (
@@ -179,16 +164,16 @@ export default function Checkout() {
                 <input type="radio" name="pay" checked={pay === 'cod'} onChange={() => setPay('cod')} />
                 <Banknote size={22} aria-hidden="true" />
                 <span>
-                  <b>Cash or UPI on delivery</b>
-                  <small>Your order is sent to us on WhatsApp to confirm.</small>
+                  <b>Cash on delivery</b>
+                  <small>Pay the rider in cash when your order arrives.</small>
                 </span>
               </label>
-              <label className={`pay ${pay === 'online' ? 'on' : ''} ${SHOP.razorpayKey ? '' : 'off'}`}>
-                <input type="radio" name="pay" disabled={!SHOP.razorpayKey} checked={pay === 'online'} onChange={() => setPay('online')} />
-                <CreditCard size={22} aria-hidden="true" />
+              <label className={`pay ${pay === 'upi' ? 'on' : ''} ${SHOP.upiId ? '' : 'off'}`}>
+                <input type="radio" name="pay" disabled={!SHOP.upiId} checked={pay === 'upi'} onChange={() => setPay('upi')} />
+                <Smartphone size={22} aria-hidden="true" />
                 <span>
-                  <b>Pay online now</b>
-                  <small>{SHOP.razorpayKey ? 'UPI, cards and netbanking through Razorpay.' : 'Coming soon.'}</small>
+                  <b>Pay now by UPI</b>
+                  <small>{SHOP.upiId ? 'GPay, PhonePe, Paytm or any UPI app.' : 'Coming soon.'}</small>
                 </span>
               </label>
             </div>
@@ -218,13 +203,13 @@ export default function Checkout() {
             <div className="grand"><dt>To pay</dt><dd>{rupees(total)}</dd></div>
           </dl>
           <button type="submit" className="btn btn-dark btn-lg btn-block" disabled={busy}>
-            {pay === 'online' ? <Lock size={18} aria-hidden="true" /> : <MessageCircle size={18} aria-hidden="true" />}
-            {busy ? 'Opening payment…' : pay === 'online' ? `Pay ${rupees(total)}` : `Place order, ${rupees(total)}`}
+            <ShoppingBag size={18} aria-hidden="true" />
+            {busy ? 'Placing your order…' : pay === 'upi' ? `Place order and pay ${rupees(total)}` : `Place order, ${rupees(total)}`}
           </button>
           <p className="small muted summary-note">
-            {pay === 'online'
-              ? 'You will be charged by Razorpay. We confirm on WhatsApp once paid.'
-              : 'WhatsApp opens with your order filled in. Tap send and we confirm within minutes.'}
+            {pay === 'upi'
+              ? 'Next you pay by UPI. We confirm your order once the payment arrives.'
+              : `We'll call you on the number above if anything changes. Questions? ${SHOP.phone}`}
           </p>
         </aside>
       </form>
